@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  apm-init:
+    image: node:20-alpine
+    container_name: apm-init
+    restart: "no"
+    command: >
+      sh -c "mkdir -p /apm && cd /apm && npm install apminsight --silent"
+    volumes:
+      - apm-volume:/apm
+
+  app:
+    build:
+      context: .
+    container_name: node-app
+    restart: unless-stopped
+    depends_on:
+      apm-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: "--require /apm/node_modules/apminsight"
+      APMINSIGHT_APP_NAME: "my-node-app"
+      APMINSIGHT_LICENSE_KEY: "in_35c5b9d4d79c36de0e8b5e42ca4c70c5"
+      APMINSIGHT_APP_PORT: 3000
+    ports:
+      - "8000:3000"
+    volumes:
+      - apm-volume:/apm
+
+volumes:
+  apm-volume: 
